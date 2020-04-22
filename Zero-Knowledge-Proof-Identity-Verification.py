@@ -6,9 +6,9 @@ import math
 import os
 import struct
 '''
-Author: Joshua Mol
+Author: ジョシュアモル
 Date: April, 22, 2020
-Contact: joshua_mol@hotmail.ca
+Contact: devr4ndom@gmail.com
 Version: 2.3
 '''
 
