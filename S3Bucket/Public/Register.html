@@ -1,0 +1,120 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="css/styles.css">
+        <title>Register</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <script rel="javascript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            var P;
+            var Q;
+            var A;
+            var V;
+            var user;
+            var pass;
+            var local = "http://127.0.0.1:5000/";
+            var api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/AuthApi";
+            var TA_Api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/TA_Api";
+            var resp;
+            var json;
+            $(document).ready(function(){
+
+                GetPrimes();
+             });
+             function GetPrimes() {
+
+                $.ajax({
+                    type: "POST",
+                    url: TA_Api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                        $("#submit").attr('disabled', true);
+                    },
+                    success: function(response){
+                        console.log(response);
+                        resp = response;
+                        P = resp.P;
+                        Q = resp.Q;
+                        A = resp.A;
+                        $("#submit").attr('disabled', false);
+                    }
+                });
+            }
+
+            function submitData() {
+                
+                user = document.getElementById("Username").value;
+                pass = document.getElementById("Password").value;
+                if (user == "" || pass == "") {
+                    alert("Your Need to Provide a Username and Password.");
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: local,
+                    data: "Password=" + pass + "&P=" + P + "&Q=" + Q + "&A=" + A + "&Code=100",
+                    beforeSend: function() { 
+
+                        $("#submit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        resp = response;
+                        V = resp.V;
+                        $("#submit").attr('disabled', false);
+                        Register_User();
+                    }
+                });
+            }
+
+            function Register_User() {
+
+                json = { Username: user, P_Val: P, Q_Val: Q, A_Val: A, V_Val: V, Code: 250 }
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                        $("#submit").attr('disabled', true);
+                    },
+                    success: function(response){
+                        
+                        console.log(response);
+                        resp = response;
+                        if (resp.code == 200){
+                            document.cookie = "Token=" + resp.token + "; Domain=zkwebapp.com; Secure;";
+                            window.location.replace(resp.url);
+                        }else{
+                            document.getElementById("Message").innerHTML = "Cannot Resgister with Username: " + resp.user;
+                            document.getElementById("Message").style.color = "red";
+                            document.getElementById("Username").value = "";
+                            document.getElementById("Password").value = "";
+                            $("#submit").attr('disabled', false);
+                        }
+                    }
+                });
+                $("#submit").attr('disabled', false);
+            }
+        </script>
+    </head>
+    <body>
+        <div class="wrapper fadeInDown">
+            <div id="formContent">
+              <div class="fadeIn first">                
+                <svg width="5em" height="5em" viewBox="0 0 16 16" class="bi bi-people-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+                  </svg>
+              </div>
+              <h2 id="Message" style="color:rgb(0, 0, 0);">Please Register To Access The Website</h2>
+              <form onsubmit="submitData();return false;">
+                <input type="text" id="Username" class="fadeIn second" name="Username" placeholder="Enter Username" autofocus>
+                <input type="text" id="Password" class="fadeIn third" name="login" placeholder="Password"> </br></br></br>
+                <input type="submit" class="fadeIn fourth" id="submit" value="Submit">
+              </form>          
+            </div>
+          </div>
+    </body>
+
+</html>

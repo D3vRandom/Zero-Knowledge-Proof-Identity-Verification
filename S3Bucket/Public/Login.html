@@ -1,0 +1,255 @@
+<html>
+    <head>
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="css/login.css">
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <title>Login</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <script rel="javascript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            var P;
+            var Q;
+            var A;
+            var V;
+            var R;
+            var Y;
+            var Commitment;
+            var resp;
+            var code;
+            var user;
+            var pass;
+            var json;
+            var local = "http://127.0.0.1:5000/";
+            var api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/AuthApi";
+            var TA_Api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/TA_Api";
+            var reqCode;
+
+            function submitUsername() {
+
+                user = document.getElementById("Username").value
+                if (user == "") {
+                    alert("Your Need to Provide a Username");
+                    return false;
+                }
+                json = { Username: user, Code: 350 };
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                        $("#UserSubmit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        $("#UserSubmit").attr('disabled', false);
+                        resp = response;
+
+                        if (resp.code == 200){
+                            P = resp.P;
+                            Q = resp.Q;
+                            A = resp.A;
+                            V = resp.V;
+                            document.getElementById("username").hidden = true;
+                            document.getElementById("password").hidden = false;
+                            document.getElementById("userPrompt").innerHTML = "Enter Password For User: " + user;
+                            genCommitment();
+                        }else{
+                            document.getElementById("UsernameTitle").innerHTML = "Cannot Find User: " + user;
+                            document.getElementById("UsernameTitle").style.color = "red";
+                        }
+                    }
+                });
+            }
+            function genCommitment() {
+
+                $.ajax({
+                    type: "POST",
+                    url: local,
+                    data: "A=" + A + "&P=" + P + "&Q=" + Q + "&Code=200",
+                    beforeSend: function() { 
+                        
+                        $("#PassSubmit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        resp = response;
+                        Commitment = resp.Commitment;
+                        submitCommitment()
+                    }
+                });
+            }
+            function submitCommitment() {
+
+                json = { Username: user, Commit: Commitment, Code: 450 }; 
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                        $("#PassSubmit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        $("#PassSubmit").attr('disabled', false);
+                        resp = response;
+                        R = resp.Challenge;
+                    }
+                });
+            }
+            function genResponse() {
+
+                pass = document.getElementById("Password").value;
+                if (pass == "") {
+                    alert("Your Need to Provide a Password");
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: local,
+                    data: "Pass=" + pass + "&Q=" + Q + "&R=" + R + "&Code=300",
+                    beforeSend: function() { 
+                        $("#PassSubmit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        $("#PassSubmit").attr('disabled', false);
+                        resp = response;
+                        Y = resp.Response;
+                        submitResponse();
+                   }
+                });
+            }
+            function submitResponse() {
+
+                json = { Username: user, Y: Y, Code: 550 };
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                        $("#PassSubmit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        $("#PassSubmit").attr('disabled', false);
+                        resp = response;
+                        if (resp.code == 200){
+                            document.cookie = "Token=" + resp.token + "; Domain=EXAMPLE.com; Secure;";
+                            document.getElementById("SAuth").hidden = false;
+                            GetPrimes();
+                        }else{
+                            document.getElementById("userPrompt").innerHTML = "Wrong Password For User: " + user;
+                            document.getElementById("userPrompt").style.color = "red";
+                        }
+                    }
+                });
+            }
+            function GetPrimes() {
+
+                $.ajax({
+                    type: "POST",
+                    url: TA_Api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                    },
+                    success: function(response){
+                        console.log(response);
+                        resp = response;
+                        P = resp.P;
+                        Q = resp.Q;
+                        A = resp.A;
+                        GenPublicKey();
+                    }
+                });
+            }
+            function GenPublicKey() {
+
+                pass = document.getElementById("Password").value
+                $.ajax({
+                    type: "POST",
+                    url: local,
+                    data: "Password=" + pass + "&P=" + P + "&Q=" + Q + "&A=" + A + "&Code=100",
+                    beforeSend: function() { 
+
+                    },
+                    success: function(response){ 
+                        console.log(response);
+                        resp = response;
+                        V = resp.V;
+                        Rotate_Vars();
+                    }
+                });
+            }
+
+            function Rotate_Vars() {
+                var cookie = document.cookie.split("=")[1];
+                user = document.getElementById("Username").value;
+                json = { cookie: cookie, P_Val: P, Q_Val: Q, A_Val: A, V_Val: V, Code: 650 }
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+                    beforeSend: function() { 
+
+                    },
+                    success: function(response){
+                        
+                        console.log(response);
+                        resp = response;
+                        if (resp.code == 200){
+                            window.location.replace(resp.url);
+                        }
+                    }
+                });
+            }
+
+        </script>
+    </head>
+    <body>
+        <div id="username">
+            <div class="wrapper fadeInDown">
+                <div id="formContent">
+                <div class="fadeIn first">                
+                    <svg width="5em" height="5em" viewBox="0 0 16 16" class="bi bi-people-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+                    </svg>
+                </div>
+                <h2 id="UsernameTitle" style="color:rgb(0, 0, 0);">Please Enter Your Username </h2>
+                <form onsubmit="submitUsername();return false;">
+                    <input type="text" id="Username" class="fadeIn second" name="Username" placeholder="Enter Username" autofocus>                    
+                    <input type="submit" class="fadeIn fourth" id="UserSubmit" value="Submit">
+                </form>          
+                </div>
+            </div>
+        </div>
+
+        <div id="password" hidden>
+            <h1 id="UsernameError"></h1>
+            <h3 ></h3>
+            <div class="wrapper fadeInDown">
+                <div class="alert alert-info" id="SAuth" hidden>
+                    <h4 style="color: green;">Authentication Successful!!! Completing Reassociation With Servers</h4>
+                </div>
+                <div id="formContent">
+                <div class="fadeIn first">                
+                    <svg width="5em" height="5em" viewBox="0 0 16 16" class="bi bi-people-fill" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+                    </svg>
+                </div>
+                <h2 id = "userPrompt"style="color:rgb(0, 0, 0);">Please Enter Your Password</h2>
+                <form onsubmit="genResponse();return false;">
+                    <input type="text" id="Password" class="fadeIn second" name="Password" placeholder="Enter Password" autofocus>                    
+                    <input type="submit" class="fadeIn fourth" id="PassSubmit" value="Submit">
+                </form>          
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

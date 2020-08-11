@@ -1,0 +1,147 @@
+<html>
+    <head>
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+        <link rel="stylesheet" href="css/RegisterGull&Bull.css">
+        <title>Bank Registeration</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+        <script src="https://kit.fontawesome.com/579fc1e85c.js" crossorigin="anonymous"></script>
+        <script rel="javascript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            var P;
+            var Q;
+            var A;
+            var V;
+            var user;
+            var local = "http://127.0.0.1:5000/";
+            var api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/BankApi";
+            var TA_Api = "https://EXAMPLE.execute-api.us-east-1.amazonaws.com/default/TA_Api";
+            var reqCode;
+            var resp;
+            var json;
+            $(document).ready(function(){
+
+                document.getElementById("msg").hidden = true;
+                GetPrimes();
+             });
+
+             function GetPrimes() { 
+
+                $.ajax({
+                    type: "POST",
+                    url: TA_Api,
+                    data: JSON.stringify(json),
+
+                    beforeSend: function() { 
+                        $("#Submit").attr('disabled', true);
+                        document.getElementById("msg").hidden = false;
+                        document.getElementById("msg").innerHTML = "Form Cannot Be Submitted Until This Message Disappears";
+                        document.getElementById("msg").style.color = "Black";
+                    },
+
+                    success: function(response){
+
+                        document.getElementById("msg").hidden = true;
+                        resp = response;
+                        P = resp.P;
+                        Q = resp.Q;
+                        A = resp.A;
+                        $("#Submit").attr('disabled', false);
+                    }
+                });
+             }
+            function submitData() {
+                document.getElementById("msg2").hidden = true;
+                CCNumber = document.getElementById("CCNumber").value;
+                ExpDate = document.getElementById("ExpDate").value;
+                CVVNumber = document.getElementById("cvv").value;
+                creds = CCNumber * ExpDate * CVVNumber;
+                if (CCNumber.length != 16 || ExpDate.length != 4 || CVVNumber.length != 3) {
+                    alert("Please Enter Proper Banking Information.");
+                    return false;
+                }
+                $.ajax({
+                    type: "POST",
+                    url: local,
+                    data: "Password=" + creds + "&P=" + P + "&Q=" + Q + "&A=" + A + "&Code=100",
+
+                    beforeSend: function() { 
+
+                        $("#submit").attr('disabled', true);
+                    },
+                    success: function(response){ 
+                        resp = response;
+                        V = resp.V;
+                        $("#submit").attr('disabled', false);
+                        Register_User();
+                    }
+                });
+            }
+            function Register_User() {
+
+                user = document.getElementById("Username").value;
+                if (user == "") {
+                    alert("Please Enter Proper Username.");
+                    return false;
+                }
+                json = { Username: user, P_Val: P, Q_Val: Q, A_Val: A, V_Val: V, Code: 250 };
+                $.ajax({
+                    type: "POST",
+                    url: api,
+                    data: JSON.stringify(json),
+
+                    beforeSend: function() { 
+
+                        $("#submit").attr('disabled', true);
+                    },
+
+                    success: function(response){ 
+                        console.log(response);
+                        resp = response;
+                        if (resp.code == 200){
+                            document.getElementById("msg2").innerHTML = "Success User Has Been Added Registered For ZeroKnowldge Banking";
+                            document.getElementById("msg2").style.color = "Black";
+                            document.getElementById("msg2").hidden = false;
+                            document.getElementById("Username").value = "";
+                            document.getElementById("CCNumber").value = "";
+                            document.getElementById("ExpDate").value = "";
+                            document.getElementById("cvv").value = "";
+                            GetPrimes();
+                        }else{
+                            document.getElementById("msg").innerHTML = "Failure Username Already Exists Choose Something Unique";
+                            document.getElementById("msg").style.color = "red";
+                        }
+                    }
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div id="creditCardInfo" >
+            <h1 id="PasswordError"></h1>
+            <h3 id="Userpromt"></h3>
+            <div>                 
+                <div class="wrapper fadeInDown">
+                <h2 id="msg" class="fadeIn first">Register For Our Online ZeroKnowledge Banking System</h2>
+                <h2 id="msg2" class="fadeIn first" hidden>Success User Has Been Added Registered For ZeroKnowldge Banking</h2>
+                <div id="formContent">
+                <div class="fadeIn first">                
+                    <i class="fa fa-bank" style="font-size:68px;"></i>                     
+                </div>                    
+                <form onsubmit="submitData();return false;">
+                    <label class="fadeIn second" for="UserName" placeholder="Username">Bank Username:</label><br>
+                    <input type="text" id="Username" class="fadeIn second" name="Username" placeholder="Enter Username" autofocus> </br>
+                    <label class="fadeIn second" for="creditCardInfo">Please Enter Your Credit Card Info Below:</label><br><br>
+                <div class="fadeIn second">   
+                    <i class="fa fa-credit-card" style="font-size:40px;"></i> 
+                </div>
+                    <input type="text" id="CCNumber" class="fadeIn second" placeholder="Card Number" maxlength='16'>
+                    <input type="password" id="ExpDate" class="fadeIn second" placeholder="MMYY" maxlength='4'>
+                    <input type="password" class="fadeIn second" id="cvv" placeholder="CVV" maxlength='3'><br><br>
+                    <input type="submit" class="fadeIn second" id="Submit" value="Submit" >    
+                </form>          
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
